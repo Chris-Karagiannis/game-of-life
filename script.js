@@ -10,53 +10,34 @@ const numGenerations =  document.getElementById('num-gens');
 canvas.width = 600;
 canvas.height = 600;
 
-const padding = 5;
+const PADDING = 0;
+const CELL_SIZE = 10;
+const ROWS = canvas.height / CELL_SIZE;
+const COLS = canvas.width / CELL_SIZE;
+const DELAY = 100;
+
 
 let generations = 0;
-let genGrid = [];
+let history = [];
 let grid = [];
 let hue = 150;
 let colour = `hsl(${hue} 100% 50%)`;
 let playGen;
 
-// Cell class
-class Cell {
-    constructor(x, y){
-        this.x = x;
-        this.y = y;
-        this.hue = hue;
-    }
-
-    neighbourCount(){
-        const count = countCells(this.x, this.y);
-        
-        if (count <= 1){
-            return 0
-        }
-
-        if (count >= 4){
-            return 0
-        }
-
-        if (count === 2 || count === 3){
-            return this
-        }
-        
-    }
-}
-
 // Count neighbouring cells and return count for game of life rules
 function countCells(xPos, yPos){
     let count = 0;
 
-    for(let y = -1; y <= 1; y++){
-        for(let x = -1; x <= 1; x++){
-            if(x !== 0 || y !== 0){
-                if(xPos + x >= 0 && yPos + y >= 0 && xPos + x < canvas.width / 10 && yPos + y < canvas.height / 10){
-                    if(grid[xPos + x][yPos + y] !== 0){
-                        count += 1;
-                    }
-                }
+    for (let y = -1; y <= 1; y++){
+        for (let x = -1; x <= 1; x++){
+            if (x === 0 && y === 0) continue;
+                
+            const newX = (xPos + x + COLS) % COLS;
+            const newY = (yPos + y + ROWS) % ROWS;
+
+
+            if (grid[newY][newX] !== 0) {
+                count += 1;
             }
         }
     }
@@ -65,160 +46,105 @@ function countCells(xPos, yPos){
 }
 
 // Clear cells
+function createGrid(){
+    return Array.from(Array(ROWS), () => new Array(COLS).fill(0));
+}
+
 function resetGrid(){
-    for(let i = 0; i < canvas.height / 10; i++){
-        grid[i] = new Array(canvas.height / 10);
-        grid[i].fill(0);
-    }
-    updateGrid();
+    grid = createGrid();
+    draw();
+    history = [];
     generations = 0;
     numGenerations.innerText = `Number of Generations: ${generations}`;
 }
 
-// Update grid to draw cells to canvas
-function updateGrid(){
+// Draw
+function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.beginPath();
-    ctx.fillStyle = "black";
-    ctx.rect(padding * 10,padding * 10,canvas.width - (padding * 2 * 10),canvas.height - (padding * 2 * 10));
-    ctx.fill()
+    drawGrid();
 
-    for(let y = padding; y < (canvas.height / 10) - padding; y++){
-        for(let x = padding; x < (canvas.width / 10) - padding; x++){
-            if(grid[x][y] !== 0){
-                ctx.beginPath();
-                ctx.fillStyle = `hsl(${grid[x][y].hue} 100% 50%)`;
-                ctx.rect(x * 10,y * 10,10,10);
-                ctx.fill();
-    
+    for(let y = PADDING; y < ROWS - PADDING; y++){
+        for(let x = PADDING; x < COLS - PADDING; x++){
+            if(grid[y][x] !== 0){
+                drawCell(x, y, grid[y][x])
             }
         }
     }
-
-    drawGridLines();
-    
 }
 
-// Draw the grid lines on the canvas
-function drawGridLines(){
-    for(let y = padding; y < (canvas.height / 10) - padding; y++){
-        ctx.beginPath();
-        ctx.strokeStyle = `hsl(0 0% 20%)`;
-        ctx.moveTo(padding * 10, y * 10);
-        ctx.lineTo(((canvas.width / 10) - padding) * 10, y * 10);
-        ctx.stroke();
+function drawCell(x, y, hue){
+    ctx.beginPath();
+    ctx.fillStyle = `hsl(${hue} 100% 50%)`;
+    ctx.rect(x * CELL_SIZE,y * CELL_SIZE,CELL_SIZE,CELL_SIZE);
+    ctx.fill();
+}
+
+
+// Draw the grid on canvas
+function drawGrid(){
+    ctx.fillStyle = "black";
+    ctx.rect(PADDING * CELL_SIZE,PADDING * CELL_SIZE,canvas.width - (PADDING * 2 * CELL_SIZE),canvas.height - (PADDING * 2 * CELL_SIZE));
+    ctx.fill()
+    
+    ctx.strokeStyle = `hsl(0 0% 10%)`;
+    ctx.beginPath();
+
+    for(let y = PADDING; y < ROWS - PADDING; y++){
+        ctx.moveTo(PADDING * CELL_SIZE, y * CELL_SIZE);
+        ctx.lineTo((COLS - PADDING) * CELL_SIZE, y * CELL_SIZE);
     }
 
-    for(let x = padding; x < (canvas.width / 10) - padding; x++){
-        ctx.beginPath();
-        ctx.strokeStyle = `hsl(0 0% 20%)`;
-        ctx.moveTo(x * 10, padding * 10);
-        ctx.lineTo(x * 10, ((canvas.height / 10) - padding) * 10);
-        ctx.stroke();
+    // vertical lines
+    for(let x = PADDING; x < COLS - PADDING; x++){
+        ctx.moveTo(x * CELL_SIZE, PADDING * CELL_SIZE);
+        ctx.lineTo(x * CELL_SIZE, (ROWS - PADDING) * CELL_SIZE);
     }
+
+    ctx.stroke();
+
+
 
 }
 
 // Move game to next generation based on game of life rules. Store current generation in array before updating
 function nextGeneration(){
-    genGrid[generations] = grid;
-    let checkGrid = [];
+    history.push(structuredClone(grid));
+    const next = createGrid()
 
-    for(let i = 0; i < canvas.height / 10; i++){
-        checkGrid[i] = new Array(canvas.height / 10);
-        checkGrid[i].fill(0);
-    }
+    for(let y = 0; y < ROWS; y++){
+        for(let x = 0; x < COLS; x++){
+            const isAlive = grid[y][x] !== 0;
+            const neighbours = countCells(x, y);
 
-    for(let y = 0; y < canvas.height / 10; y++){
-        for(let x = 0; x < canvas.width / 10; x++){
-            if(grid[x][y] !== 0){
-                checkGrid[x][y] = grid[x][y].neighbourCount();
-            }else{
-                const count = countCells(x, y);
-                if(count === 3){
-                    checkGrid[x][y] = new Cell(x,y);
-                }else{
-                    checkGrid[x][y] = 0;
-                }
+            if (isAlive && (neighbours === 2 || neighbours === 3)){
+                next[y][x] = grid[y][x];
+            } else if (!isAlive && neighbours === 3){
+                next[y][x] = hue;
             }
         }
     }
 
-    grid = checkGrid;
+    grid = next;
     hue += 10;
     generations += 1;
     numGenerations.innerText = `Number of Generations: ${generations}`;
-    updateGrid();
+    draw();
 }
 
 // Move back a generation
 function prevGeneration(){
     if (generations > 0){
         generations -= 1;
-        grid = genGrid[generations];
+        grid = history[generations];
         numGenerations.innerText = `Number of Generations: ${generations}`;
-        updateGrid();
+        draw();
     }
-}
-
-// Add glider gun for testing
-function gosperGliderGun(){
-    grid[11][15] = new Cell(11,15);
-    grid[12][15] = new Cell(12,15);
-    grid[11][16] = new Cell(11,16);
-    grid[12][16] = new Cell(12,16);
-
-    grid[24][13] = new Cell(24,13);
-    grid[23][13] = new Cell(23,13);
-    grid[22][14] = new Cell(22,14);
-    grid[21][15] = new Cell(21,15);
-    grid[21][16] = new Cell(21,16);
-    grid[21][17] = new Cell(21,17);
-    grid[22][18] = new Cell(22,18);
-    grid[23][19] = new Cell(23,19);
-    grid[24][19] = new Cell(24,19);
-
-    grid[25][16] = new Cell(25,16);
-
-    grid[26][14] = new Cell(26,14);
-
-    grid[27][15] = new Cell(27,15);
-    grid[27][16] = new Cell(27,16);
-    grid[27][17] = new Cell(27,17);  
-
-    grid[28][16] = new Cell(28,16);
-
-    grid[26][18] = new Cell(26,18);
-    
-    grid[31][15] = new Cell(31,15);
-    grid[31][14] = new Cell(31,14);
-    grid[31][13] = new Cell(31,13);
-
-    grid[32][15] = new Cell(32,15);
-    grid[32][14] = new Cell(32,14);
-    grid[32][13] = new Cell(32,13);
-
-    grid[33][12] = new Cell(33,12);
-    grid[33][16] = new Cell(33,16);
-
-    grid[35][11] = new Cell(35,11);
-    grid[35][12] = new Cell(35,12);
-
-    grid[35][16] = new Cell(35,16);
-    grid[35][17] = new Cell(35,17);
-
-    grid[45][13] = new Cell(45,13);
-    grid[45][14] = new Cell(45,14);
-    grid[46][13] = new Cell(46,13);
-    grid[46][14] = new Cell(46,14);
-
-    updateGrid();
 }
 
 // Start button event
 function start(){
     if(!playGen){
-        playGen = setInterval(nextGeneration, 100);
+        playGen = setInterval(nextGeneration, DELAY);
         playButton.classList.toggle("hidden");
         stopButton.classList.toggle("hidden");
     }
@@ -241,18 +167,18 @@ canvas.addEventListener('mousedown', (e) => {
         y : e.clientY - rect.top,
     }
 
-    let x = Math.floor(mousePosition.x / 10);
-    let y = Math.floor(mousePosition.y / 10);
+    let x = Math.floor(mousePosition.x / CELL_SIZE);
+    let y = Math.floor(mousePosition.y / CELL_SIZE);
 
-    if(x >= padding && y >= padding && y < (canvas.height / 10) - padding && x < (canvas.height / 10) - padding){
-        if(grid[x][y] === 0){
-            grid[x][y] = new Cell(x,y);
-        }else{
-            grid[x][y] = 0;
+    if(x >= PADDING && y >= PADDING && y < ROWS - PADDING && x < COLS - PADDING){
+        if(grid[y][x] === 0){
+            grid[y][x] = hue;
+        } else {
+            grid[y][x] = 0;
         }
-        console.log(x, y);
+        
     }
-    updateGrid();
+    draw();
 });
 
 
@@ -265,15 +191,15 @@ canvas.addEventListener('mousemove', (e) => {
         y : e.clientY - rect.top,
     }
 
-    let x = Math.floor(mousePosition.x / 10);
-    let y = Math.floor(mousePosition.y / 10);
+    let x = Math.floor(mousePosition.x / CELL_SIZE);
+    let y = Math.floor(mousePosition.y / CELL_SIZE);
    
-    updateGrid();
+    draw();
 
-    if(x >= padding && y >= padding && y < (canvas.height / 10) - padding && x < (canvas.height / 10) - padding){
+    if(x >= PADDING && y >= PADDING && y < ROWS - PADDING && x < COLS - PADDING){
         ctx.beginPath();
         ctx.fillStyle = "grey";
-        ctx.rect(x * 10,y * 10,10,10);
+        ctx.rect(x * CELL_SIZE,y * CELL_SIZE,CELL_SIZE,CELL_SIZE);
         ctx.fill();
         ctx.closePath();
     }
@@ -281,13 +207,8 @@ canvas.addEventListener('mousemove', (e) => {
 })
 
 resetButton.addEventListener("click", resetGrid);
-
 nextButton.addEventListener("click" , nextGeneration)
-
 prevButton.addEventListener("click" , prevGeneration)
-
 playButton.addEventListener("click", start);
-
 stopButton.addEventListener("click", stop);
-
 resetGrid();
