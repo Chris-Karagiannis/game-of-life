@@ -159,8 +159,18 @@ function stop(){
 }
 
 // Click to add cell on canvas element
+let isMouseDown = false;
+function getDrawMode(){
+    return document.querySelector('input[name="drawMode"]:checked').value;
+}
+
+console.log(getDrawMode())
+
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
+
+    // Allows drawing while holding mouse down
+    isMouseDown = true;
 
     const mousePosition = {
         x : e.clientX - rect.left,
@@ -171,15 +181,20 @@ canvas.addEventListener('mousedown', (e) => {
     let y = Math.floor(mousePosition.y / CELL_SIZE);
 
     if(x >= PADDING && y >= PADDING && y < ROWS - PADDING && x < COLS - PADDING){
-        if(grid[y][x] === 0){
+        if(getDrawMode() == "draw"){ 
             grid[y][x] = hue;
         } else {
             grid[y][x] = 0;
         }
-        
     }
     draw();
 });
+
+
+canvas.addEventListener('mouseup', (e) => {
+    // Mouse up makes it so drawing stops when holding
+    isMouseDown = false;
+})
 
 
 // Show cell mouse is currently in when moving
@@ -197,6 +212,14 @@ canvas.addEventListener('mousemove', (e) => {
     draw();
 
     if(x >= PADDING && y >= PADDING && y < ROWS - PADDING && x < COLS - PADDING){
+        if (isMouseDown){
+            if(getDrawMode() == "draw"){ 
+                grid[y][x] = hue;
+            } else {
+                grid[y][x] = 0;
+            }
+        }
+
         ctx.beginPath();
         ctx.fillStyle = "grey";
         ctx.rect(x * CELL_SIZE,y * CELL_SIZE,CELL_SIZE,CELL_SIZE);

@@ -15,7 +15,6 @@ body {
     color: var(--text);
 }
 
-/* Layout */
 .container {
     min-height: 100vh;
     display: flex;
@@ -23,7 +22,6 @@ body {
     align-items: center;
 }
 
-/* App card */
 .app {
     background: rgba(17, 24, 39, 0.8);
     backdrop-filter: blur(10px);
@@ -74,7 +72,7 @@ button {
     width: 42px;
     height: 42px;
 
-    padding: 0; /* important */
+    padding: 0;
     border: none;
     background: var(--panel);
     color: var(--text);
@@ -98,4 +96,51 @@ button:active {
 
 .hidden {
     display: none;
+}
+
+.draw-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem ;
+}
+
+.draw-buttons input[type="radio"] {
+    display: none;
+}
+
+
+.draw-buttons label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 44px;
+    height: 44px;
+
+    border-radius: 10px;
+    cursor: pointer;
+
+    background: var(--panel);
+    border: 1px solid var(--border);
+
+    transition: all 0.2s ease;
+}
+
+.draw-buttons label i {
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+.draw-buttons label:hover {
+    background: var(--accent);
+    color: black;
+    transform: translateY(-1px);
+}
+
+.draw-buttons input[type="radio"]:checked + label {
+    background: var(--accent);
+    color: black;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
 }

@@ -11,6 +11,15 @@
     <div class="container">
         <div class="app">
             <h1>Conway's Game of Life</h1>
+            
+            <div class="draw-buttons">
+                <input type="radio" name="drawMode" id="draw" value="draw" checked>
+                <label for="draw"><i class="bi bi-pencil"></i></label>
+                
+                
+                <input type="radio" name="drawMode" id="erase" value="erase">
+                <label for="erase"><i class="bi bi-eraser-fill"></i></label>
+            </div>
 
             <canvas id="canvas"></canvas>
 
