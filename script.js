@@ -68,6 +68,16 @@ function draw() {
             if(grid[y][x] !== 0){
                 drawCell(x, y, grid[y][x])
             }
+            const TRAIL = 5;
+            const OPACITY = 0.15;
+            if (history.length > 0){
+                for (let i = 0; i < Math.min(history.length, TRAIL); i++) {
+                    if (history[history.length - (i + 1)][y][x] !== 0){
+                        drawPrevious(x, y, history[history.length - (i + 1)][y][x], OPACITY / (i + 1))
+                    }
+                    
+                }
+            }
         }
     }
 }
@@ -77,6 +87,15 @@ function drawCell(x, y, hue){
     ctx.fillStyle = `hsl(${hue} 100% 50%)`;
     ctx.rect(x * CELL_SIZE,y * CELL_SIZE,CELL_SIZE,CELL_SIZE);
     ctx.fill();
+}
+
+function drawPrevious(x, y, hue, opacity){
+    ctx.globalAlpha = opacity;
+    ctx.beginPath();
+    ctx.fillStyle =  `hsl(${hue} 100% 50%)`;
+    ctx.rect(x * CELL_SIZE,y * CELL_SIZE,CELL_SIZE,CELL_SIZE);
+    ctx.fill();
+    ctx.globalAlpha = 1;
 }
 
 
